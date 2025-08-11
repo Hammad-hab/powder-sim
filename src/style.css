@@ -1,0 +1,19 @@
+body {
+  margin: 0;
+  padding: 0;
+}
+
+canvas {
+  display: block; /* removes inline gap */
+  width: 100vw;
+  height: 100vh;
+}
+
+.fps-counter {
+  position: absolute;
+  font-family: arial;
+  font-size: 50px;
+  letter-spacing: 5px;
+  background: black;
+  color: white;
+}
