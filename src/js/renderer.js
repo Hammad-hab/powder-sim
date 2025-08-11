@@ -6,7 +6,7 @@ class Renderer {
     this.height = height;
     this.gridSize = this.width * this.height;
     this.grid = new Uint8Array(this.gridSize); // 0 = empty, 1 = sand
-    this.backgroundBuffer = new Uint8Array(this.gridSize)
+    this.backgroundBuffer = new Uint8Array(this.gridSize);
     this.target = 0;
     this.targets = [];
     this.domElement = document.querySelector("canvas");
@@ -16,93 +16,19 @@ class Renderer {
     }
     this.domElement.width = this.width;
     this.domElement.height = this.height;
-    this.spawnedParticles = 0
-
+    this.spawnedParticles = 0;
   }
 
-  render(spawnX, spawnY) {
-    this.ctx.clearRect(0, 0, this.width, this.height);
+  spawn(x, y) {
+    const spawnX = x;
+    const spawnY = y;
 
-    for (let y = this.height - 1; y >= 0; y--) {
-      for (let x = 0; x < this.width; x++) {
-        const index = toIndex(x, y, this.width);
-
-        if (this.grid[index] !== 0) {
-          const typeId = this.grid[index];
-          let moved = false;
-          const target = this.targets[typeId]
-
-          // Positions to check for movement
-          // const left = toIndex(x - 1, y, this.width);
-          
-          const down = toIndex(x, y + 1, this.width);
-          const downLeft = toIndex(x - 1, y + 1, this.width);
-          const downRight = toIndex(x + 1, y + 1, this.width);
-
-          // Try down
-           if (
-            y + 1 < this.height &&
-            this.grid[down] === 0 &&
-            this.backgroundBuffer[down] === 0 && target.rules.d
-          ) {
-            this.backgroundBuffer[down] = typeId;
-            moved = true;
-          }
-          // Try down-left
-          else if (
-            x > 0 &&
-            y + 1 < this.height &&
-            this.grid[downLeft] === 0 &&
-            this.backgroundBuffer[downLeft] === 0 && target.rules.dl
-          ) {
-            this.backgroundBuffer[downLeft] = typeId;
-            moved = true;
-          }
-          // Try down-right
-          else if (
-            x + 1 < this.width &&
-            y + 1 < this.height &&
-            this.grid[downRight] === 0 &&
-            this.backgroundBuffer[downRight] === 0 && target.rules.dr
-          ) {
-            this.backgroundBuffer[downRight] = typeId;
-            moved = true;
-          }
-
-
-          // if (
-          //   x - 1 > 0 &&
-          //   this.grid[left] === 0 &&
-          //   y + 1 > this.height &&
-          //   this.backgroundBuffer[left] === 0
-          // ) {
-          //   this.backgroundBuffer[left] = typeId;
-          //   moved = true;
-          // }
-          // else if (
-          //   x + 1 < this.width &&
-          //   y + 1 > this.height &&
-          //   this.grid[right] === 0 &&
-          //   this.backgroundBuffer[right] === 0
-          // ) {
-          //   this.backgroundBuffer[right] = typeId;
-          //   moved = true;
-          // }
- 
-          // Stay put if can't move
-          if (!moved) {
-            this.backgroundBuffer[index] = typeId;
-          }
-        }
-      }
-    }
-
-    // Spawn new particle AFTER movement so you don't overwrite moving particles
     if (spawnX != null && spawnY != null) {
       const minx = spawnX - 25;
       const maxx = spawnX + 25;
       const miny = spawnY - 25;
       const maxy = spawnY + 25;
+      console.log(maxx * maxy);
       for (let x = minx; x < maxx; x += 2) {
         for (let y = miny; y < maxy; y += 2) {
           // const element = array[index];
@@ -121,13 +47,99 @@ class Renderer {
               windowwidth: this.width,
             })
           ) {
-            this.spawnedParticles += 1
+            this.spawnedParticles += 1;
             this.backgroundBuffer[spawnIndex] = this.target;
           }
         }
       }
     }
-    // Draw all particles
+  }
+
+  render(spawnX, spawnY) {
+    this.ctx.clearRect(0, 0, this.width, this.height);
+
+    for (let y = this.height - 1; y >= 0; y--) {
+      for (let x = 0; x < this.width; x++) {
+        const index = toIndex(x, y, this.width);
+
+        if (this.grid[index] !== 0) {
+          const typeId = this.grid[index];
+          let moved = false;
+          const target = this.targets[typeId];
+          const down = toIndex(x, y + target.speeds.d, this.width);
+          const downLeft = toIndex(
+            x - target.speeds.dl,
+            y + target.speeds.dl,
+            this.width
+          );
+          const downRight = toIndex(
+            x + target.speeds.dr,
+            y + target.speeds.dr,
+            this.width
+          );
+
+          const left = toIndex(x - target.speeds.l, y, this.width);
+          const right = toIndex(x + target.speeds.r, y, this.width);
+          const canLeft =
+            this.grid[left] === 0 &&
+            this.backgroundBuffer[left] === 0 &&
+            target.rules.l;
+
+          const canRight =
+            this.grid[right] === 0 &&
+            this.backgroundBuffer[right] === 0 &&
+            target.rules.r;
+
+          // Try down
+          if (
+            y + target.speeds.d < this.height &&
+            this.grid[down] === 0 &&
+            this.backgroundBuffer[down] === 0 &&
+            target.rules.d
+          ) {
+            this.backgroundBuffer[down] = typeId;
+            moved = true;
+          }
+          // Try down-left
+          else if (
+            x > 0 &&
+            y + target.speeds.dl < this.height &&
+            this.grid[downLeft] === 0 &&
+            this.backgroundBuffer[downLeft] === 0 &&
+            target.rules.dl
+          ) {
+            this.backgroundBuffer[downLeft] = typeId;
+            moved = true;
+          }
+          // Try down-right
+          else if (
+            x + target.speeds.dr < this.width &&
+            y + target.speeds.dr < this.height &&
+            this.grid[downRight] === 0 &&
+            this.backgroundBuffer[downRight] === 0 &&
+            target.rules.dr
+          ) {
+            this.backgroundBuffer[downRight] = typeId;
+            moved = true;
+          } else if (canLeft) {
+            this.backgroundBuffer[left] = typeId;
+            moved = true;
+          } else if (canRight) {
+            this.backgroundBuffer[right] = typeId;
+            moved = true;
+          }
+
+          // Stay put if can't move
+          if (!moved) {
+            this.backgroundBuffer[index] = typeId;
+          } 
+        }
+      }
+    }
+
+    // Spawn new particle AFTER movement so you don't overwrite moving particles
+    if (spawnX && spawnY) this.spawn(spawnX, spawnY)
+      
     for (let index = 0; index < this.gridSize; index++) {
       if (this.backgroundBuffer[index] !== 0) {
         const { x, y } = fromIndex(index, this.width);
@@ -138,8 +150,8 @@ class Renderer {
       }
     }
 
-    this.grid.set(this.backgroundBuffer)
-    this.backgroundBuffer.fill(0)
+    this.grid.set(this.backgroundBuffer);
+    this.backgroundBuffer.fill(0);
   }
 }
 
