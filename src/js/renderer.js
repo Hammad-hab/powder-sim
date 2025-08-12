@@ -2,14 +2,12 @@ import { LiquidBox } from "./box";
 import { toIndex, fromIndex, isParameterClean } from "./utils";
 
 class Renderer {
-
   constructor(width, height) {
     this.width = width;
     this.height = height;
     this.gridSize = this.width * this.height;
     this.grid = new Uint8Array(this.gridSize); // 0 = empty, 1 = sand
     this.backgroundBuffer = new Uint8Array(this.gridSize);
-
 
     this.target = 0;
     this.targets = [];
@@ -22,27 +20,26 @@ class Renderer {
     this.domElement.height = this.height;
     this.spawnedParticles = 0;
 
-
     this.imageData = this.ctx.createImageData(width, height);
     this.pixels = this.imageData.data;
   }
 
-  spawn(x, y) {
+  spawn(x, y, thickness = 25) {
     const spawnX = x;
     const spawnY = y;
 
     if (spawnX != null && spawnY != null) {
-      const minx = spawnX - 25;
-      const maxx = spawnX + 25;
-      const miny = spawnY - 25;
-      const maxy = spawnY + 25;
+      const minx = spawnX - thickness;
+      const maxx = spawnX + thickness;
+      const miny = spawnY - thickness;
+      const maxy = spawnY + thickness;
       console.log(maxx * maxy);
       for (let x = minx; x < maxx; x += 2) {
         for (let y = miny; y < maxy; y += 2) {
           // const element = array[index];
           const spawnIndex = toIndex(
-            x + Math.floor(Math.random() * 25 - 12.5),
-            y + Math.floor(Math.random() * 25 - 12.5),
+            x + Math.floor(Math.random() * thickness - thickness / 2),
+            y + Math.floor(Math.random() * thickness - thickness / 2),
             this.width
           );
           if (
@@ -55,7 +52,6 @@ class Renderer {
               windowwidth: this.width,
             })
           ) {
-            this.spawnedParticles += 1;
             this.backgroundBuffer[spawnIndex] = this.target;
           }
         }
@@ -64,6 +60,7 @@ class Renderer {
   }
 
   render() {
+    this.spawnedParticles = 0;
     for (let y = this.height - 1; y >= 0; y--) {
       for (let x = 0; x < this.width; x++) {
         const index = toIndex(x, y, this.width);
@@ -99,23 +96,30 @@ class Renderer {
 
           // Try down
           if (
-            y + target.speeds.d < this.height &&
-            this.grid[down] === 0 &&
-            this.backgroundBuffer[down] === 0 &&
-            target.rules.d ||
-            (this.targets[this.grid[down]] instanceof LiquidBox) && !(target instanceof LiquidBox) 
+            y + target.speeds.d < this.height && // Move this check outward to prevent out-of-bounds access to grid[down]
+            ((this.grid[down] === 0 &&
+              this.backgroundBuffer[down] === 0 &&
+              target.rules.d) ||
+              (this.targets[this.grid[down]] instanceof LiquidBox &&
+                !(target instanceof LiquidBox)))
           ) {
-            if (this.targets[this.grid[down]] instanceof LiquidBox && !(target instanceof LiquidBox)  ) {
-               this.backgroundBuffer[up] = this.grid[down]
-            }
+            const displacedType = this.backgroundBuffer[down]; // Capture the current background value before overwriting
             this.backgroundBuffer[down] = typeId;
             moved = true;
+            if (
+              this.targets[this.grid[down]] instanceof LiquidBox &&
+              !(target instanceof LiquidBox) &&
+              this.grid[down] !== 0 &&
+              this.backgroundBuffer[up] === 0 &&
+              displacedType !== 0 // Only displace if there was actually something (the staying liquid) to displace
+            ) {
+              this.backgroundBuffer[up] = displacedType; // Use the captured type for accuracy
+            }
           }
           // Try down-left
           else if (
             x > 0 &&
             y + target.speeds.dl < this.height &&
-            
             this.grid[downLeft] === 0 &&
             this.backgroundBuffer[downLeft] === 0 &&
             target.rules.dl
@@ -133,41 +137,57 @@ class Renderer {
           ) {
             this.backgroundBuffer[downRight] = typeId;
             moved = true;
-          } else if (canLeft) {
-            this.backgroundBuffer[left] = typeId;
-            moved = true;
-          } else if (canRight) {
-            this.backgroundBuffer[right] = typeId;
-            moved = true;
+          }
+
+          if (!moved) {
+            if (canLeft && canRight) {
+              if (Math.random() < 0.5) {
+                this.backgroundBuffer[left] = typeId;
+              } else {
+                this.backgroundBuffer[right] = typeId;
+              }
+              moved = true;
+            } else if (canLeft) {
+              this.backgroundBuffer[left] = typeId;
+              moved = true;
+            } else if (canRight) {
+              this.backgroundBuffer[right] = typeId;
+              moved = true;
+            }
           }
 
           // Stay put if can't move
           if (!moved) {
             this.backgroundBuffer[index] = typeId;
-          } 
+          }
         }
       }
     }
-      
+
     for (let index = 0; index < this.gridSize; index++) {
       if (this.backgroundBuffer[index] !== 0) {
         const t = this.targets[this.backgroundBuffer[index]];
-        
+
         if (t) {
-          const color = t.color
+          const color = t.color;
+          this.spawnedParticles += 1;
 
-          this.pixels[index*4 + 0] = color[0] + 1
-          this.pixels[index*4 + 1] = color[1] + 1
-          this.pixels[index*4 + 2] = color[2] + 1
-          this.pixels[index*4 + 3] = 255
+          this.pixels[index * 4 + 0] = color[0] + 1;
+          this.pixels[index * 4 + 1] = color[1] + 1;
+          this.pixels[index * 4 + 2] = color[2] + 1;
+          this.pixels[index * 4 + 3] = 255;
         }
+      } else if (
+        this.pixels[index * 4] !== 0 &&
+        this.pixels[index * 4 + 1] !== 0 &&
+        this.pixels[index * 4 + 2] !== 0 &&
+        this.pixels[index * 4 + 3] !== 0
+      ) {
+        this.pixels[index * 4 + 0] = this.pixels[index * 4 + 0] * 0.9;
+        this.pixels[index * 4 + 1] = this.pixels[index * 4 + 1] * 0.9;
+        this.pixels[index * 4 + 2] = this.pixels[index * 4 + 2] * 0.9;
 
-      } else if (this.pixels[index*4] !== 0 && this.pixels[index*4 + 1] !== 0 && this.pixels[index*4 + 2] !== 0 && this.pixels[index*4 + 3] !== 0) {
-          this.pixels[index*4 + 0] = this.pixels[index*4 + 0]*0.9
-          this.pixels[index*4 + 1] = this.pixels[index*4 + 1]*0.9
-          this.pixels[index*4 + 2] = this.pixels[index*4 + 2]*0.9
-
-          this.pixels[index*4 + 3] = this.pixels[index*4 + 3]*0.9
+        this.pixels[index * 4 + 3] = this.pixels[index * 4 + 3] * 0.9;
       }
     }
     this.ctx.putImageData(this.imageData, 0, 0);

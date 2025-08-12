@@ -1,9 +1,7 @@
-import { Renderer, LiquidBox, Box } from "./js/index";
-import { Button } from "@playcanvas/pcui";
-import "@playcanvas/pcui/styles";
-
+import { Renderer, LiquidBox, Box, toIndex } from "./js/index";
+import {buttons} from "./interface"
 const topbar = document.querySelector(".topbar");
-
+let RAIN = false
 const renderer = new Renderer(window.innerWidth, window.innerHeight);
 renderer.target = 1;
 
@@ -91,34 +89,35 @@ function tick() {
   if (pointer.isMouseDown) {
     renderer.spawn(pointer.x, pointer.y);
   }
+
+  if (RAIN) {
+    const old_target = renderer.target;
+    renderer.target = 1;
+    const inc = 50;
+    for (let x = 0; x < window.innerWidth; x += inc) {
+      const index = toIndex(
+        x + Math.floor(Math.random() * inc - inc / 2),
+        Math.floor(Math.random() * 25),
+        renderer.width
+      );
+      renderer.backgroundBuffer[index] = renderer.target;
+    }
+    renderer.target = old_target;
+  }
 }
 
-const b = new Button({
-  text: "Reset",
+
+buttons.rain.addEventListener("click", () => {
+  RAIN = !RAIN
 });
 
-const b2 = new Button({
-  text: "Sand",
-});
-
-const b3 = new Button({
-  text: "Water",
-});
-
-b.dom.addEventListener("click", () => {
-  renderer.grid.fill(0);
-});
-
-b2.dom.addEventListener("click", () => {
+buttons.sand.addEventListener("click", () => {
   renderer.target = 2;
 });
 
-b3.dom.addEventListener("click", () => {
+buttons.water.addEventListener("click", () => {
   renderer.target = 1;
 });
 
-topbar.appendChild(b.dom);
-topbar.appendChild(b2.dom);
-topbar.appendChild(b3.dom);
 
 tick();
