@@ -9,7 +9,6 @@ function fromIndex(index, width) {
 }
 
 
-
 function isParameterClean({
   grid,
   width,

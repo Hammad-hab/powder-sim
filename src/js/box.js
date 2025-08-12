@@ -29,13 +29,12 @@ class Box {
   }
 }
 
-class TwoVaryingColorBox extends Box {
-  constructor(ctx, colors) {
+class LiquidBox extends Box {
+  constructor(ctx, color) {
     super(ctx);
     this.width = 3
     this.height = 3
-    this.colors = colors;
-    this.color = this.colors[Math.floor(Math.random() * this.colors.length)];
+    this.color = color
     this.rules = {
       d: true,
       dr: true,
@@ -52,4 +51,4 @@ class TwoVaryingColorBox extends Box {
   }
 }
 
-export { Box, TwoVaryingColorBox };
+export { Box, LiquidBox };

@@ -1,5 +1,5 @@
 import Renderer from "./renderer";
-import { Box, TwoVaryingColorBox } from "./box";
+import { Box, LiquidBox } from "./box";
 import { isParameterClean, fromIndex, toIndex } from "./utils";
 
 
@@ -9,5 +9,5 @@ export {
     isParameterClean,
     fromIndex,
     toIndex,
-    TwoVaryingColorBox
+    LiquidBox
 }

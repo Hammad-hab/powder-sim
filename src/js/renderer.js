@@ -1,12 +1,16 @@
+import { LiquidBox } from "./box";
 import { toIndex, fromIndex, isParameterClean } from "./utils";
 
 class Renderer {
+
   constructor(width, height) {
     this.width = width;
     this.height = height;
     this.gridSize = this.width * this.height;
     this.grid = new Uint8Array(this.gridSize); // 0 = empty, 1 = sand
     this.backgroundBuffer = new Uint8Array(this.gridSize);
+
+
     this.target = 0;
     this.targets = [];
     this.domElement = document.querySelector("canvas");
@@ -17,6 +21,10 @@ class Renderer {
     this.domElement.width = this.width;
     this.domElement.height = this.height;
     this.spawnedParticles = 0;
+
+
+    this.imageData = this.ctx.createImageData(width, height);
+    this.pixels = this.imageData.data;
   }
 
   spawn(x, y) {
@@ -55,9 +63,7 @@ class Renderer {
     }
   }
 
-  render(spawnX, spawnY) {
-    this.ctx.clearRect(0, 0, this.width, this.height);
-
+  render() {
     for (let y = this.height - 1; y >= 0; y--) {
       for (let x = 0; x < this.width; x++) {
         const index = toIndex(x, y, this.width);
@@ -67,6 +73,7 @@ class Renderer {
           let moved = false;
           const target = this.targets[typeId];
           const down = toIndex(x, y + target.speeds.d, this.width);
+          const up = toIndex(x, y - target.speeds.d, this.width);
           const downLeft = toIndex(
             x - target.speeds.dl,
             y + target.speeds.dl,
@@ -95,8 +102,12 @@ class Renderer {
             y + target.speeds.d < this.height &&
             this.grid[down] === 0 &&
             this.backgroundBuffer[down] === 0 &&
-            target.rules.d
+            target.rules.d ||
+            (this.targets[this.grid[down]] instanceof LiquidBox) && !(target instanceof LiquidBox) 
           ) {
+            if (this.targets[this.grid[down]] instanceof LiquidBox && !(target instanceof LiquidBox)  ) {
+               this.backgroundBuffer[up] = this.grid[down]
+            }
             this.backgroundBuffer[down] = typeId;
             moved = true;
           }
@@ -104,6 +115,7 @@ class Renderer {
           else if (
             x > 0 &&
             y + target.speeds.dl < this.height &&
+            
             this.grid[downLeft] === 0 &&
             this.backgroundBuffer[downLeft] === 0 &&
             target.rules.dl
@@ -136,20 +148,29 @@ class Renderer {
         }
       }
     }
-
-    // Spawn new particle AFTER movement so you don't overwrite moving particles
-    if (spawnX && spawnY) this.spawn(spawnX, spawnY)
       
     for (let index = 0; index < this.gridSize; index++) {
       if (this.backgroundBuffer[index] !== 0) {
-        const { x, y } = fromIndex(index, this.width);
         const t = this.targets[this.backgroundBuffer[index]];
+        
         if (t) {
-          t.draw(x, y);
+          const color = t.color
+
+          this.pixels[index*4 + 0] = color[0] + 1
+          this.pixels[index*4 + 1] = color[1] + 1
+          this.pixels[index*4 + 2] = color[2] + 1
+          this.pixels[index*4 + 3] = 255
         }
+
+      } else if (this.pixels[index*4] !== 0 && this.pixels[index*4 + 1] !== 0 && this.pixels[index*4 + 2] !== 0 && this.pixels[index*4 + 3] !== 0) {
+          this.pixels[index*4 + 0] = this.pixels[index*4 + 0]*0.9
+          this.pixels[index*4 + 1] = this.pixels[index*4 + 1]*0.9
+          this.pixels[index*4 + 2] = this.pixels[index*4 + 2]*0.9
+
+          this.pixels[index*4 + 3] = this.pixels[index*4 + 3]*0.9
       }
     }
-
+    this.ctx.putImageData(this.imageData, 0, 0);
     this.grid.set(this.backgroundBuffer);
     this.backgroundBuffer.fill(0);
   }

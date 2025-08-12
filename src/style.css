@@ -7,6 +7,10 @@ canvas {
   display: block; /* removes inline gap */
   width: 100vw;
   height: 100vh;
+  touch-action: none; /* prevents panning/zooming on touch */
+  -webkit-user-select: none;
+  user-select: none;
+background-color: black;
 }
 
 .fps-counter {
@@ -16,4 +20,15 @@ canvas {
   letter-spacing: 5px;
   background: black;
   color: white;
+  z-index: 100;
+}
+
+
+.topbar {
+  width: 100vw;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  place-items: center;
+  justify-items: center;
 }
