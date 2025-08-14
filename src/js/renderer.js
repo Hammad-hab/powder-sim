@@ -1,4 +1,4 @@
-import { LiquidBox } from "./box";
+import { Box, LiquidBox } from "./particles";
 import { toIndex, fromIndex, isParameterClean } from "./utils";
 
 class Renderer {
@@ -10,7 +10,9 @@ class Renderer {
     this.backgroundBuffer = new Uint8Array(this.gridSize);
 
     this.target = 0;
-    this.targets = [];
+    this.targets = [
+      null
+    ];
     this.domElement = document.querySelector("canvas");
     this.ctx = this.domElement.getContext("2d");
     if (!this.domElement) {
@@ -22,6 +24,10 @@ class Renderer {
 
     this.imageData = this.ctx.createImageData(width, height);
     this.pixels = this.imageData.data;
+  }
+
+  registerParticleTypes(...particles) {
+      this.targets.push(...particles)
   }
 
   spawn(x, y, thickness = 25) {
@@ -69,21 +75,21 @@ class Renderer {
           const typeId = this.grid[index];
           let moved = false;
           const target = this.targets[typeId];
-          const down = toIndex(x, y + target.speeds.d, this.width);
-          const up = toIndex(x, y - target.speeds.d, this.width);
+          const down = toIndex(x, y + target.rules.ds, this.width);
+          const up = toIndex(x, y - target.rules.ds, this.width);
           const downLeft = toIndex(
-            x - target.speeds.dl,
-            y + target.speeds.dl,
+            x - target.rules.dls,
+            y + target.rules.dls,
             this.width
           );
           const downRight = toIndex(
-            x + target.speeds.dr,
-            y + target.speeds.dr,
+            x + target.rules.drs,
+            y + target.rules.drs,
             this.width
           );
 
-          const left = toIndex(x - target.speeds.l, y, this.width);
-          const right = toIndex(x + target.speeds.r, y, this.width);
+          const left = toIndex(x - target.rules.ls, y, this.width);
+          const right = toIndex(x + target.rules.rs, y, this.width);
           const canLeft =
             this.grid[left] === 0 &&
             this.backgroundBuffer[left] === 0 &&
@@ -96,12 +102,12 @@ class Renderer {
 
           // Try down
           if (
-            y + target.speeds.d < this.height && // Move this check outward to prevent out-of-bounds access to grid[down]
+            y + target.rules.ds < this.height && // Move this check outward to prevent out-of-bounds access to grid[down]
             ((this.grid[down] === 0 &&
               this.backgroundBuffer[down] === 0 &&
               target.rules.d) ||
               (this.targets[this.grid[down]] instanceof LiquidBox &&
-                !(target instanceof LiquidBox)))
+                !(target instanceof LiquidBox) && target.density > this.targets[this.grid[down]].density)) 
           ) {
             const displacedType = this.backgroundBuffer[down]; // Capture the current background value before overwriting
             this.backgroundBuffer[down] = typeId;
@@ -119,7 +125,7 @@ class Renderer {
           // Try down-left
           else if (
             x > 0 &&
-            y + target.speeds.dl < this.height &&
+            y + target.rules.dls < this.height &&
             this.grid[downLeft] === 0 &&
             this.backgroundBuffer[downLeft] === 0 &&
             target.rules.dl
@@ -129,8 +135,8 @@ class Renderer {
           }
           // Try down-right
           else if (
-            x + target.speeds.dr < this.width &&
-            y + target.speeds.dr < this.height &&
+            x + target.rules.drs < this.width &&
+            y + target.rules.drs < this.height &&
             this.grid[downRight] === 0 &&
             this.backgroundBuffer[downRight] === 0 &&
             target.rules.dr
@@ -141,9 +147,10 @@ class Renderer {
 
           if (!moved) {
             if (canLeft && canRight) {
-              if (Math.random() < 0.5) {
+              if (Math.random() < 0.9) {
                 this.backgroundBuffer[left] = typeId;
               } else {
+
                 this.backgroundBuffer[right] = typeId;
               }
               moved = true;
@@ -175,7 +182,7 @@ class Renderer {
           this.pixels[index * 4 + 0] = color[0] + 1;
           this.pixels[index * 4 + 1] = color[1] + 1;
           this.pixels[index * 4 + 2] = color[2] + 1;
-          this.pixels[index * 4 + 3] = 255;
+          this.pixels[index * 4 + 3] = color[3] ? color[3]*100*255 : 255;
         }
       } else if (
         this.pixels[index * 4] !== 0 &&

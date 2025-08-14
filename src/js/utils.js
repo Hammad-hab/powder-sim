@@ -27,9 +27,25 @@ function isParameterClean({
 }
 
 
+function rgb(r, g, b) {
+  return [r,g,b]
+}
+
+function rgba(r, g, b, a=-1) {
+  if (typeof r == 'number')
+    return [r,g,b,a]
+  else {
+    if (r[3])
+      return `rgba(${r})`
+    else 
+      return `rgb(${r})`
+  }
+}
+
 
 export {
   toIndex,
   fromIndex,
-  isParameterClean
+  isParameterClean,
+  rgb, rgba
 }

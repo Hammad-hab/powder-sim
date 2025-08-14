@@ -1,41 +1,48 @@
 import { Renderer, LiquidBox, Box, toIndex } from "./js/index";
-import {buttons} from "./interface"
-const topbar = document.querySelector(".topbar");
+import {buttons, renderParticleBox, renderUI} from "./interface"
+import { rgb, rgba } from "./js/utils";
+
 let RAIN = false
-const renderer = new Renderer(window.innerWidth, window.innerHeight);
-renderer.target = 1;
-
-const gradient = renderer.ctx.createLinearGradient(
-  0,
-  window.innerHeight - 25,
-  0,
-  window.innerHeight
-);
-
-// Define color stops
-gradient.addColorStop(0, "blue"); // Start color
-gradient.addColorStop(1, "darkblue"); // End color
-
-const water = new LiquidBox(renderer.ctx);
-const box = new Box(renderer.ctx);
-box.color = [219, 188, 103];
-water.color = [0, 76, 255];
-renderer.targets.push(null, water, box);
-
 const pointer = {
-  x: 0,
-  y: 0,
+  x: null,
+  y: null,
   isMouseDown: false,
 };
 
-// Mouse events
+const renderer = new Renderer(window.innerWidth, window.innerHeight);
+renderer.target = 1;
+
+
+const water = new LiquidBox(renderer.ctx, 'Water');
+const acid = new LiquidBox(renderer.ctx, 'Acid');
+const sand = new Box(renderer.ctx, 'Sand');
+const dirt = new Box(renderer.ctx, 'Dirt')
+
+sand.density = 1.6
+sand.color = rgb(219, 188, 103)
+
+dirt.density = 2.0
+dirt.color = rgba(95, 69, 0, 1)
+
+water.color = rgb(0, 76, 255);
+
+acid.density = 1.25
+acid.color = rgb(26, 255, 0);
+
+renderer.registerParticleTypes(water, sand, acid, dirt)
+
 renderer.domElement.addEventListener("mousemove", (e) => {
   pointer.x = e.clientX;
   pointer.y = e.clientY;
 });
 
-renderer.domElement.addEventListener("mousedown", () => {
+renderer.domElement.addEventListener("mousedown", (e) => {
   pointer.isMouseDown = true;
+  if (!pointer.x || !pointer.y)
+  {
+    pointer.x = e.clientX
+    pointer.y = e.clientY
+  }
 });
 
 renderer.domElement.addEventListener("mouseup", () => {
@@ -71,6 +78,7 @@ let lastFrameTime = performance.now();
 const counter = document.querySelector("div#fps");
 const num_particles = document.querySelector("div#npart");
 let fps = 0;
+
 setInterval(() => {
   counter.innerText = `${fps.toFixed(0)}FPS`;
   num_particles.innerText = renderer.spawnedParticles;
@@ -90,7 +98,8 @@ function tick() {
     renderer.spawn(pointer.x, pointer.y);
   }
 
-  if (RAIN) {
+  /** TODO: ReAdd rain
+   * if (RAIN) {
     const old_target = renderer.target;
     renderer.target = 1;
     const inc = 50;
@@ -104,20 +113,12 @@ function tick() {
     }
     renderer.target = old_target;
   }
+   */
 }
 
-
-buttons.rain.addEventListener("click", () => {
-  RAIN = !RAIN
-});
-
-buttons.sand.addEventListener("click", () => {
-  renderer.target = 2;
-});
-
-buttons.water.addEventListener("click", () => {
-  renderer.target = 1;
-});
-
-
+renderParticleBox(water, renderer)
+renderParticleBox(sand, renderer)
+renderParticleBox(acid, renderer)
+renderParticleBox(dirt, renderer)
+renderUI()
 tick();
