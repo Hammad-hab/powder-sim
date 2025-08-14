@@ -70,7 +70,6 @@ class Renderer {
     for (let y = this.height - 1; y >= 0; y--) {
       for (let x = 0; x < this.width; x++) {
         const index = toIndex(x, y, this.width);
-
         if (this.grid[index] !== 0) {
           const typeId = this.grid[index];
           let moved = false;
@@ -121,6 +120,7 @@ class Renderer {
             ) {
               this.backgroundBuffer[up] = displacedType; // Use the captured type for accuracy
             }
+
           }
           // Try down-left
           else if (
@@ -150,7 +150,6 @@ class Renderer {
               if (Math.random() < 0.9) {
                 this.backgroundBuffer[left] = typeId;
               } else {
-
                 this.backgroundBuffer[right] = typeId;
               }
               moved = true;

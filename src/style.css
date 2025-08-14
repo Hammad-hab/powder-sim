@@ -23,6 +23,7 @@ canvas {
   background: black;
   color: white;
   z-index: 100;
+  transition: color 0.5s ease;
 }
 
 .topbar {

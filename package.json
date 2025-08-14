@@ -12,6 +12,7 @@
     "vite": "^7.1.0"
   },
   "dependencies": {
-    "@playcanvas/pcui": "^5.2.0"
+    "@playcanvas/pcui": "^5.2.0",
+    "yaml": "^2.8.1"
   }
 }

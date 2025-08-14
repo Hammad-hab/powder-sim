@@ -1,5 +1,5 @@
 import { Renderer, LiquidBox, Box, toIndex } from "./js/index";
-import {buttons, renderParticleBox, renderUI} from "./interface"
+import { renderParticleBox, renderUI } from "./interface"
 import { rgb, rgba } from "./js/utils";
 
 let RAIN = false
@@ -15,6 +15,7 @@ renderer.target = 1;
 
 const water = new LiquidBox(renderer.ctx, 'Water');
 const acid = new LiquidBox(renderer.ctx, 'Acid');
+const oil = new LiquidBox(renderer.ctx, 'Oil');
 const sand = new Box(renderer.ctx, 'Sand');
 const dirt = new Box(renderer.ctx, 'Dirt')
 
@@ -23,13 +24,18 @@ sand.color = rgb(219, 188, 103)
 
 dirt.density = 2.0
 dirt.color = rgba(95, 69, 0, 1)
+dirt.rules.ds = 2
+
+oil.color = rgba(174, 119, 0, 0.5)
+oil.rules.ls = 1
+oil.rules.rs = 1
 
 water.color = rgb(0, 76, 255);
 
 acid.density = 1.25
 acid.color = rgb(26, 255, 0);
 
-renderer.registerParticleTypes(water, sand, acid, dirt)
+renderer.registerParticleTypes(water, sand, acid, dirt, oil)
 
 renderer.domElement.addEventListener("mousemove", (e) => {
   pointer.x = e.clientX;
@@ -73,16 +79,22 @@ renderer.domElement.addEventListener("touchmove", (e) => {
 renderer.domElement.addEventListener("touchend", () => {
   pointer.isMouseDown = false;
 });
-
 let lastFrameTime = performance.now();
 const counter = document.querySelector("div#fps");
 const num_particles = document.querySelector("div#npart");
 let fps = 0;
 
 setInterval(() => {
-  counter.innerText = `${fps.toFixed(0)}FPS`;
+  counter.innerText = `${fps.toFixed(0)} FPS`;
   num_particles.innerText = renderer.spawnedParticles;
-}, 500);
+
+  // FPS → hue (green at 60 FPS)
+  const maxFPS = 60;
+  const clampedFPS = Math.min(fps, maxFPS);
+  const hueFPS = (clampedFPS / maxFPS) * 120; // red→green
+  counter.style.color = `hsl(${hueFPS}, 80%, 50%)`;
+
+}, 200);
 
 function tick() {
   requestAnimationFrame(tick);
@@ -97,28 +109,12 @@ function tick() {
   if (pointer.isMouseDown) {
     renderer.spawn(pointer.x, pointer.y);
   }
-
-  /** TODO: ReAdd rain
-   * if (RAIN) {
-    const old_target = renderer.target;
-    renderer.target = 1;
-    const inc = 50;
-    for (let x = 0; x < window.innerWidth; x += inc) {
-      const index = toIndex(
-        x + Math.floor(Math.random() * inc - inc / 2),
-        Math.floor(Math.random() * 25),
-        renderer.width
-      );
-      renderer.backgroundBuffer[index] = renderer.target;
-    }
-    renderer.target = old_target;
-  }
-   */
 }
 
 renderParticleBox(water, renderer)
 renderParticleBox(sand, renderer)
 renderParticleBox(acid, renderer)
 renderParticleBox(dirt, renderer)
+renderParticleBox(oil, renderer)
 renderUI()
 tick();
