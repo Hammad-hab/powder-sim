@@ -1,10 +1,12 @@
 function toIndex(x, y, width) {
+
   return y * width + x;
 }
 
 function fromIndex(index, width) {
   const y = Math.floor(index / width);
   const x = index % width;
+  console.log(x)
   return { x, y };
 }
 

@@ -1,22 +1,8 @@
+import { Box } from "./js";
 import { rgba } from "./js/utils";
 
 const TOPBAR = document.querySelector(".topbar");
 const buttons = {
-  // rain: (() => {
-  //   const l = Object.assign(document.createElement("label"), {
-  //     htmlFor: "should_rain",
-  //   });
-  //   l.append(
-  //     Object.assign(document.createElement("input"), {
-  //       type: "checkbox",
-  //       id: "should_rain",
-  //       name: "should_rain",
-  //     }),
-  //     document.createTextNode(" Enable Rain")
-  //   );
-  //   return l;
-  // })(),
-
 };
 
 function renderUI() {
@@ -35,10 +21,10 @@ function createStyles(styles)
 
 
 function renderParticleBox(particle, renderer) {
-  const name = particle.name
-  console.log(name)
-  const color = rgba(particle.color)
+ 
+  const color = Array.isArray(particle.color) ? rgba(particle.color) : rgba(particle.color())
   console.log(color)
+  const name = particle.name
   const element = document.createElement('div')
   const styles = createStyles({
     background: color,
@@ -47,6 +33,10 @@ function renderParticleBox(particle, renderer) {
     cursor: 'pointer'
   })
   element.addEventListener('click', () => {
+    if (particle === -1) {
+      renderer.target = 0
+      return
+    }
     renderer.target = renderer.targets.indexOf(particle)
   })
   element.style.cssText = styles
