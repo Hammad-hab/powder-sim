@@ -1,5 +1,5 @@
 import { Renderer, LiquidBox, Box, toIndex } from "./js/index";
-import { renderParticleBox, renderUI } from "./interface"
+import { renderParticleBox, renderUI, updateStats } from "./interface"
 import { rgb, rgba } from "./js/utils";
 
 const pointer = {
@@ -9,6 +9,7 @@ const pointer = {
 };
 
 const renderer = new Renderer(window.innerWidth, window.innerHeight);
+window.renderer = renderer; // Make accessible to control panel
 let paused = false
 renderer.target = 1;
 
@@ -22,8 +23,10 @@ const steam = new Box(renderer.ctx, 'Steam')
 const fire = new Box(renderer.ctx, 'Fire')
 const stone = new Box(renderer.ctx, 'Stone')
 const wood = new Box(renderer.ctx, 'Wood')
+const spores = new Box(renderer.ctx, 'Spores')
+const Fungi = new Box(renderer.ctx, 'Fungi')
 
-sand.density = 0.5
+sand.density = 2.0
 
 stone.pointerSize = 25
 sand.color = rgb(219, 188, 103)
@@ -46,7 +49,6 @@ fire.color = () => {
   const CC = [rgb(255, 149, 35), rgb(255, 95, 2),rgb(255, 2, 2)]
   return CC[Math.floor(Math.random()*CC.length)]
 }
-// fire.doesSpreadRandomly = false
 
 dirt.density = 2.0
 dirt.color = rgba(95, 69, 0, 1)
@@ -81,7 +83,20 @@ wood.rules.ls = 0
 wood.doesSpreadRandomly = false
 wood.color = rgb(108, 34, 0)
 
-renderer.registerParticleTypes(water, sand, acid, dirt, lava, steam, stone, fire, wood)
+spores.color = rgb(255, 203, 158)
+spores.density = 0.5
+spores.pointerSize = 10
+
+Fungi.color = rgb(55, 133, 0) 
+Fungi.density = 0.5
+Fungi.rules.ds = 0
+Fungi.rules.dls = 0
+Fungi.rules.drs = 0
+Fungi.rules.rs = 0
+Fungi.rules.ls = 0
+Fungi.doesSpreadRandomly = false
+
+renderer.registerParticleTypes(water, sand, acid, dirt, lava, steam, stone, fire, wood, spores, Fungi)
 
 renderer.domElement.addEventListener("mousemove", (e) => {
   pointer.x = e.clientX;
@@ -112,7 +127,7 @@ renderer.domElement.addEventListener("touchstart", (e) => {
   pointer.x = touch.clientX;
   pointer.y = touch.clientY;
   pointer.isMouseDown = true;
-  e.preventDefault(); // prevent scrolling while touching
+  e.preventDefault();
 });
 
 renderer.domElement.addEventListener("touchmove", (e) => {
@@ -128,25 +143,15 @@ renderer.domElement.addEventListener("touchend", () => {
 
 
 let lastFrameTime = performance.now();
-const counter = document.querySelector("div#fps");
-const num_particles = document.querySelector("div#npart");
 let fps = 0;
-
 
 document.querySelector('button#paused').addEventListener("click", () => {
   paused = !paused
 });
 
+// Update stats every 200ms
 setInterval(() => {
-  counter.innerText = `${fps.toFixed(0)} FPS`;
-  num_particles.innerText = renderer.spawnedParticles;
-
-  // FPS → hue (green at 60 FPS)
-  const maxFPS = 60;
-  const clampedFPS = Math.min(fps, maxFPS);
-  const hueFPS = (clampedFPS / maxFPS) * 120; // red→green
-  counter.style.color = `hsl(${hueFPS}, 80%, 50%)`;
-
+  updateStats(fps, renderer.spawnedParticles);
 }, 200);
 
 function tick() {
@@ -161,7 +166,7 @@ function tick() {
     const target = renderer.targets[renderer.target];
     const psize = typeof target.pointerSize === 'function' 
         ? 25
-        : target.pointerSize;  // This will use the default 25 if not set
+        : target.pointerSize;
     
     renderer.spawn(pointer.x, pointer.y, psize ?? 25);
     if (paused) renderer.render()
@@ -181,5 +186,6 @@ renderParticleBox(steam, renderer)
 renderParticleBox(stone, renderer)
 renderParticleBox(fire, renderer)
 renderParticleBox(wood, renderer)
+renderParticleBox(spores, renderer)
 renderUI()
 tick();

@@ -156,7 +156,7 @@ class Renderer {
           if (typeId === 3 && y + target.rules.ds < this.height && this.grid[down] !== 0 &&
             this.backgroundBuffer[down] !== 0 && this.grid[down] !== 3 &&  this.backgroundBuffer[down] !== 3) {
               this.backgroundBuffer[index] = 0
-            this.backgroundBuffer[down] = typeId
+            this.backgroundBuffer[down] = 0
             this.backgroundBuffer[up] = 6
             moved = true
           }
@@ -170,34 +170,52 @@ class Renderer {
             moved = true
           }
 
+          if (typeId === 10 && y + target.rules.ds < this.height && (this.grid[down] === 1 ||   this.backgroundBuffer[down] === 1) || (this.grid[down] === 11 || this.backgroundBuffer[down] === 11)) {
+            // (this.backgroundBuffer[down] ===3 || this.backgroundBuffer[down] === 5)) {
+              // this.backgroundBuffer[index] = 0
+            // this.backgroundBuffer[down] = 1
+            this.backgroundBuffer[up] = 11
+            moved = true
+          }
+
+          if (typeId === 11 && this.grid[up] === 0 || this.backgroundBuffer[up] === 0 &&  this.grid[down] === 11 || this.backgroundBuffer[down] === 11) {
+            this.backgroundBuffer[up] = 11
+            moved = true
+          }
+
           if (this.targets[typeId] && this.targets[typeId].density < 0) {
             if (typeId === 8) {  // Fire
                 // Check all 8 surrounding cells for wood (typeId 9)
                 const neighbors = [
                     {x: x, y: y  -1},      // top
-                    {x: x, y: y + 1},      // bottom
-                    {x: x - 1, y: y - 1},  // top-left
-                    {x: x + 1, y: y - 1},  // top-right
+                    // top-left
+                    {x: x - 1, y: y - 1},
+                    // top-right
+                    {x: x + 1, y: y - 1},
+                    // bottom
+                    {x: x, y: y + 1},
+                    // bottom-left
+                    {x: x - 1, y: y + 1},
+                    // bottom-right
+                    {x: x + 1, y: y + 1},
                     {x: x - 1, y: y},      // left
                     {x: x + 1, y: y},      // right
-                    {x: x - 1, y: y + 1},  // bottom-left
-                    {x: x + 1, y: y + 1}   // bottom-right
                 ];
         
                 // Burn any adjacent wood - check BOTH grid and backgroundBuffer
                 for (const neighbor of neighbors) {
                         const neighborIndex = toIndex(neighbor.x, neighbor.y, this.width);
-                        if (this.grid[index] === 9 || this.backgroundBuffer[index]===9 || this.grid[neighborIndex] === 9 || this.backgroundBuffer[neighborIndex]===9) {
-                            this.backgroundBuffer[neighborIndex] = 8;  // Turn wood into fire
+                        if (this.grid[index] === 9 || this.backgroundBuffer[index]===9 || this.grid[neighborIndex] === 9 || this.backgroundBuffer[neighborIndex]===9 || this.grid[neighborIndex] === 8 || this.backgroundBuffer[neighborIndex]=== 8) {
+                            this.backgroundBuffer[neighborIndex] = this.grid[neighborIndex] === 8 || this.backgroundBuffer[neighborIndex] === 8 ? 0.0 : 8;  // Turn wood into fire
                             this.backgroundBuffer[index] = 0;  // Turn wood into fire
                         }
                 }
 
-                if (this.backgroundBuffer[down] === typeId)
-                    this.backgroundBuffer[down] = 0;
+                // if (this.backgroundBuffer[down] === typeId)
+                    this.backgroundBuffer[index] = 0;
 
-                if (this.backgroundBuffer[up] === typeId)
-                  this.backgroundBuffer[up] = 0;
+                if (this.backgroundBuffer[down] === typeId)
+                  this.backgroundBuffer[down] = 0;
 
 
              
@@ -298,6 +316,12 @@ class Renderer {
     this.ctx.putImageData(this.imageData, 0, 0);
     this.grid.set(this.backgroundBuffer);
     this.backgroundBuffer.fill(0);
+  }
+
+  clear() {
+    this.ctx.putImageData(this.imageData, 0, 0);
+    this.grid.fill(0)
+    this.backgroundBuffer.fill(0)
   }
 }
 
